@@ -1,25 +1,44 @@
+import json
+import re
+
 from ddgs import DDGS
 
 from backend.config import SEARCH_RESULT_COUNT
 from backend.llm import chat_once
 
 _EXTRACT_QUERY_PROMPT = (
-    "次のユーザーの発言から、Web検索で調べるべき内容だけを"
-    "短い検索キーワードとして1行で出力してください。"
+    "次のユーザーの発言を読み、Web検索で調べるべき検索キーワードを"
+    "1〜3個、JSON配列で出力してください。"
+    "調べたい対象が複数あるなら、それぞれ別のキーワードに分けること。"
     "発言そのものの言い回しや余分な言葉（「教えて」「について」など）は含めず、"
-    "検索に使う語句のみを出力してください。説明は不要です。\n\n"
+    "検索に使う語句のみにしてください。説明文は書かず、JSON配列のみを出力してください。\n\n"
+    "例:\n"
+    "発言: 東京と大阪の今日の天気を教えて\n"
+    "出力: [\"東京 天気 今日\", \"大阪 天気 今日\"]\n\n"
     "発言: {message}\n"
-    "検索キーワード:"
+    "出力:"
 )
 
 
-async def extract_search_query(message: str) -> str:
-    """ユーザーの発言からWeb検索すべき内容を抽出する。失敗時は発言そのものを返す"""
+def _parse_json_array(text: str) -> list[str]:
+    match = re.search(r"\[.*\]", text, re.DOTALL)
+    if not match:
+        return []
     try:
-        query = await chat_once([{"role": "user", "content": _EXTRACT_QUERY_PROMPT.format(message=message)}])
+        data = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return []
+    return [str(item).strip() for item in data if str(item).strip()]
+
+
+async def extract_search_queries(message: str) -> list[str]:
+    """ユーザーの発言からWeb検索すべきキーワードを1〜3個抽出する。失敗時は発言そのものを1件返す"""
+    try:
+        raw = await chat_once([{"role": "user", "content": _EXTRACT_QUERY_PROMPT.format(message=message)}])
     except Exception:
-        return message
-    return query.strip().strip('"').strip("「」") or message
+        return [message]
+    queries = _parse_json_array(raw)
+    return queries[:3] if queries else [message]
 
 
 def web_search(query: str, max_results: int = SEARCH_RESULT_COUNT) -> list[dict]:

@@ -2,6 +2,7 @@ const sessionListEl = document.getElementById("session-list");
 const messagesEl = document.getElementById("messages");
 const chatForm = document.getElementById("chat-form");
 const messageInput = document.getElementById("message-input");
+const sendBtn = document.getElementById("send-btn");
 const searchModeCheckbox = document.getElementById("search-mode-checkbox");
 const newChatBtn = document.getElementById("new-chat-btn");
 const memoryToggleBtn = document.getElementById("memory-toggle-btn");
@@ -12,6 +13,7 @@ const memoryAddForm = document.getElementById("memory-add-form");
 const memoryAddInput = document.getElementById("memory-add-input");
 
 let currentSessionId = null;
+let activeController = null;
 
 async function loadSessions() {
   const res = await fetch("/sessions");
@@ -85,6 +87,10 @@ messageInput.addEventListener("keydown", (e) => {
 
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (activeController) {
+    activeController.abort();
+    return;
+  }
   const text = messageInput.value.trim();
   if (!text || !currentSessionId) return;
   messageInput.value = "";
@@ -92,41 +98,55 @@ chatForm.addEventListener("submit", async (e) => {
   const assistantDiv = appendMessage("assistant", "");
   assistantDiv.classList.add("thinking");
 
-  const res = await fetch("/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      session_id: currentSessionId,
-      message: text,
-      search_mode: searchModeCheckbox.checked,
-    }),
-  });
+  activeController = new AbortController();
+  sendBtn.textContent = "■";
+  sendBtn.classList.add("stop-mode");
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let full = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop();
-    for (const line of lines) {
-      if (!line) continue;
-      const data = JSON.parse(line);
-      if (data.type === "status") {
-        assistantDiv.classList.add("thinking");
-        assistantDiv.textContent = data.text;
-      } else if (data.type === "content") {
-        assistantDiv.classList.remove("thinking");
-        full += data.text;
-        assistantDiv.textContent = full;
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: currentSessionId,
+        message: text,
+        search_mode: searchModeCheckbox.checked,
+      }),
+      signal: activeController.signal,
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line) continue;
+        const data = JSON.parse(line);
+        if (data.type === "status") {
+          assistantDiv.classList.add("thinking");
+          assistantDiv.textContent = data.text;
+        } else if (data.type === "content") {
+          assistantDiv.classList.remove("thinking");
+          full += data.text;
+          assistantDiv.textContent = full;
+        }
+        messagesEl.scrollTop = messagesEl.scrollHeight;
       }
-      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
+  } catch (err) {
+    if (err.name !== "AbortError") throw err;
+    if (!full) assistantDiv.textContent = "（停止しました）";
+  } finally {
+    assistantDiv.classList.remove("thinking");
+    activeController = null;
+    sendBtn.textContent = "送信";
+    sendBtn.classList.remove("stop-mode");
   }
-  assistantDiv.classList.remove("thinking");
   loadSessions();
 });
 

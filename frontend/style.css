@@ -56,6 +56,9 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #1e1f22; color
   padding: 8px 16px; background: #3b5bdb; color: white; border: none;
   border-radius: 6px; cursor: pointer;
 }
+#chat-form button[type="submit"].stop-mode {
+  background: white; color: #3b5bdb;
+}
 
 #memory-panel {
   width: 280px; background: #17181a; padding: 12px; overflow-y: auto;
