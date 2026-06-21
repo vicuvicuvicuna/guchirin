@@ -371,6 +371,40 @@ async def import_profile_text(text: str) -> dict:
     return {"basic": get_basic_info(), "career": created_career, "education": created_education}
 
 
+PROFILE_SCHEMA_DESCRIPTION = (
+    "テーブル一覧:\n"
+    "- profile_basic(key, value, updated_at): 基本情報。1行1項目のkey-value形式であり、"
+    "name や birth_date 自体はカラムではなくkey列に入る値である点に注意。"
+    "keyに入るのは次のいずれか: " + ", ".join(BASIC_INFO_KEYS) + "\n"
+    "  例: SELECT value FROM profile_basic WHERE key = 'name'\n"
+    "- career_history(id, company, position, start_date, end_date, salary, "
+    "reason_for_joining, reason_for_leaving, note, sort_order, created_at): 職歴。1行1社。\n"
+    "- education_history(id, degree, field, school, graduated_year, note, created_at): 学歴。1行1校。\n"
+    "- residence_history(id, place, period, note, created_at): 居住歴。1行1拠点。\n"
+)
+
+_ALLOWED_QUERY_TABLES = {"profile_basic", "career_history", "education_history", "residence_history"}
+
+
+def run_profile_query(sql: str) -> list[dict]:
+    """LLMが生成したSELECT文を検証して実行する。SELECT以外、複数文、未許可テーブルへの参照は拒否する"""
+    statements = [s for s in sql.split(";") if s.strip()]
+    if len(statements) != 1:
+        raise ValueError("一度に実行できるSELECT文は1つだけです")
+    statement = statements[0].strip()
+    if not re.match(r"(?is)^select\b", statement):
+        raise ValueError("SELECT文のみ実行できます")
+    referenced = {m.lower() for m in re.findall(r"(?i)\b(?:from|join)\s+([a-zA-Z_][a-zA-Z0-9_]*)", statement)}
+    if not referenced or not referenced.issubset(_ALLOWED_QUERY_TABLES):
+        raise ValueError(f"参照できるテーブルは {', '.join(sorted(_ALLOWED_QUERY_TABLES))} のみです")
+    with _connect() as conn:
+        try:
+            rows = conn.execute(statement).fetchall()
+        except sqlite3.Error as e:
+            raise ValueError(str(e)) from e
+        return [dict(r) for r in rows]
+
+
 def format_profile_summary() -> str:
     """チャットのtool callingから呼び出す用: 基本情報・職歴・学歴・居住歴を読みやすいテキストにまとめる"""
     basic = get_basic_info()

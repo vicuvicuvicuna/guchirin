@@ -45,11 +45,19 @@ RETRIEVE_PROFILE_TOOL = {
     "function": {
         "name": "retrieve_profile",
         "description": (
-            "ユーザーの基本情報（氏名・現在の勤務先・職位・収入など）、"
-            "職歴（各社の在籍期間・職位・収入・転職理由）、学歴を取得する。"
-            "経歴、転職、収入、学歴の話題が出たときに使う。"
+            "ユーザーの構造化されたデータ（基本情報・職歴・学歴・居住歴）をSQLのSELECT文で取得する。"
+            "氏名・生年月日・現在の勤務先・職位・収入、職歴（在籍期間・職位・収入・転職理由）、学歴、"
+            "居住歴の話題が出たときに使う。\n\n"
+            + profile.PROFILE_SCHEMA_DESCRIPTION
+            + "\nqueryには上記テーブルに対するSELECT文を1つだけ書くこと。"
         ),
-        "parameters": {"type": "object", "properties": {}, "required": []},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "実行したいSELECT文(1文のみ)"},
+            },
+            "required": ["query"],
+        },
     },
 }
 
@@ -75,5 +83,12 @@ def execute_tool(name: str, arguments: dict) -> str:
             return "関連する記憶は見つかりませんでした。"
         return "\n".join(f"- {m}" for m in memories)
     if name == "retrieve_profile":
-        return profile.format_profile_summary() or "プロフィール情報は登録されていません。"
+        query = arguments.get("query", "")
+        try:
+            rows = profile.run_profile_query(query)
+        except ValueError as e:
+            return f"SQLエラー: {e}"
+        if not rows:
+            return "該当する情報は見つかりませんでした。"
+        return "\n".join(", ".join(f"{k}: {v}" for k, v in row.items()) for row in rows)
     return f"不明なツール: {name}"
