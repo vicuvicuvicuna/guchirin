@@ -19,6 +19,19 @@ const profileBirthDateInput = document.getElementById("profile-birth-date");
 const profileCurrentCompanyInput = document.getElementById("profile-current-company");
 const profileCurrentPositionInput = document.getElementById("profile-current-position");
 const profileCurrentSalaryInput = document.getElementById("profile-current-salary");
+const profileGenderInput = document.getElementById("profile-gender");
+const profileReligionInput = document.getElementById("profile-religion");
+const profileSexualOrientationInput = document.getElementById("profile-sexual-orientation");
+const profileRaceInput = document.getElementById("profile-race");
+const profileHometownInput = document.getElementById("profile-hometown");
+const profileResidenceCountryInput = document.getElementById("profile-residence-country");
+const profileNationalityInput = document.getElementById("profile-nationality");
+const residenceListEl = document.getElementById("residence-list");
+const residenceAddToggleBtn = document.getElementById("residence-add-toggle-btn");
+const residenceAddForm = document.getElementById("residence-add-form");
+const residencePlaceInput = document.getElementById("residence-place");
+const residencePeriodInput = document.getElementById("residence-period");
+const residenceNoteInput = document.getElementById("residence-note");
 const careerListEl = document.getElementById("career-list");
 const educationListEl = document.getElementById("education-list");
 const careerAddToggleBtn = document.getElementById("career-add-toggle-btn");
@@ -395,7 +408,7 @@ profileToggleBtn.addEventListener("click", () => {
 });
 
 async function loadProfile() {
-  await Promise.all([loadBasicInfo(), loadCareer(), loadEducation()]);
+  await Promise.all([loadBasicInfo(), loadCareer(), loadEducation(), loadResidence()]);
 }
 
 async function loadBasicInfo() {
@@ -406,6 +419,13 @@ async function loadBasicInfo() {
   profileCurrentCompanyInput.value = basic.current_company || "";
   profileCurrentPositionInput.value = basic.current_position || "";
   profileCurrentSalaryInput.value = basic.current_salary || "";
+  profileGenderInput.value = basic.gender || "";
+  profileReligionInput.value = basic.religion || "";
+  profileSexualOrientationInput.value = basic.sexual_orientation || "";
+  profileRaceInput.value = basic.race || "";
+  profileHometownInput.value = basic.hometown || "";
+  profileResidenceCountryInput.value = basic.residence_country || "";
+  profileNationalityInput.value = basic.nationality || "";
 }
 
 function makeFieldInput(value, placeholder) {
@@ -572,6 +592,82 @@ async function loadEducation() {
   }
 }
 
+async function loadResidence() {
+  const res = await fetch("/profile/residence");
+  const items = await res.json();
+  residenceListEl.innerHTML = "";
+  for (const r of items) {
+    const li = document.createElement("li");
+
+    const fields = document.createElement("div");
+    fields.className = "entry-fields";
+    const placeInput = makeFieldInput(r.place, t("ph_residence_place"));
+    const periodInput = makeFieldInput(r.period, t("ph_residence_period"));
+    [placeInput, periodInput].forEach((i) => fields.appendChild(i));
+    li.appendChild(fields);
+
+    const noteInput = document.createElement("textarea");
+    noteInput.rows = 2;
+    noteInput.placeholder = t("ph_note");
+    noteInput.value = r.note || "";
+    li.appendChild(noteInput);
+
+    const actions = document.createElement("div");
+    actions.className = "entry-actions";
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.textContent = t("save_btn");
+    saveBtn.addEventListener("click", async () => {
+      await fetch(`/profile/residence/${r.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          place: placeInput.value.trim(),
+          period: periodInput.value.trim(),
+          note: noteInput.value.trim(),
+        }),
+      });
+      loadResidence();
+    });
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.textContent = "×";
+    delBtn.className = "delete-btn";
+    delBtn.addEventListener("click", async () => {
+      await fetch(`/profile/residence/${r.id}`, { method: "DELETE" });
+      loadResidence();
+    });
+
+    actions.appendChild(saveBtn);
+    actions.appendChild(delBtn);
+    li.appendChild(actions);
+
+    residenceListEl.appendChild(li);
+  }
+}
+
+residenceAddToggleBtn.addEventListener("click", () => {
+  residenceAddForm.classList.toggle("hidden");
+});
+
+residenceAddForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  await fetch("/profile/residence", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      place: residencePlaceInput.value.trim(),
+      period: residencePeriodInput.value.trim(),
+      note: residenceNoteInput.value.trim(),
+    }),
+  });
+  residenceAddForm.reset();
+  residenceAddForm.classList.add("hidden");
+  loadResidence();
+});
+
 careerAddToggleBtn.addEventListener("click", () => {
   careerAddForm.classList.toggle("hidden");
 });
@@ -630,6 +726,13 @@ profileBasicForm.addEventListener("submit", async (e) => {
       current_company: profileCurrentCompanyInput.value.trim(),
       current_position: profileCurrentPositionInput.value.trim(),
       current_salary: profileCurrentSalaryInput.value.trim(),
+      gender: profileGenderInput.value.trim(),
+      religion: profileReligionInput.value.trim(),
+      sexual_orientation: profileSexualOrientationInput.value.trim(),
+      race: profileRaceInput.value.trim(),
+      hometown: profileHometownInput.value.trim(),
+      residence_country: profileResidenceCountryInput.value.trim(),
+      nationality: profileNationalityInput.value.trim(),
     }),
   });
 });

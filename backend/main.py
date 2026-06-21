@@ -202,6 +202,13 @@ class ProfileBasicUpdate(BaseModel):
     current_company: str = ""
     current_position: str = ""
     current_salary: str = ""
+    gender: str = ""
+    religion: str = ""
+    sexual_orientation: str = ""
+    race: str = ""
+    hometown: str = ""
+    residence_country: str = ""
+    nationality: str = ""
 
 
 @app.put("/profile/basic")
@@ -283,6 +290,36 @@ def put_education(entry_id: str, req: EducationEntry):
 @app.delete("/profile/education/{entry_id}")
 def delete_education(entry_id: str):
     profile.delete_education(entry_id)
+    return {"ok": True}
+
+
+class ResidenceEntry(BaseModel):
+    place: str = ""
+    period: str = ""
+    note: str = ""
+
+
+@app.get("/profile/residence")
+def get_residence():
+    return profile.list_residence()
+
+
+@app.post("/profile/residence")
+def post_residence(req: ResidenceEntry):
+    return profile.add_residence(req.model_dump())
+
+
+@app.put("/profile/residence/{entry_id}")
+def put_residence(entry_id: str, req: ResidenceEntry):
+    updated = profile.update_residence(entry_id, req.model_dump())
+    if updated is None:
+        raise HTTPException(status_code=404, detail="residence entry not found")
+    return updated
+
+
+@app.delete("/profile/residence/{entry_id}")
+def delete_residence(entry_id: str):
+    profile.delete_residence(entry_id)
     return {"ok": True}
 
 

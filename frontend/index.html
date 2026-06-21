@@ -72,7 +72,31 @@
       <input type="text" id="profile-current-company" data-i18n-placeholder="ph_current_company" placeholder="現在の勤務先">
       <input type="text" id="profile-current-position" data-i18n-placeholder="ph_current_position" placeholder="現在の職位">
       <input type="text" id="profile-current-salary" data-i18n-placeholder="ph_current_salary" placeholder="現在の年収">
+
+      <h4 data-i18n="sensitive_info_title">機密性の高い個人情報（任意）</h4>
+      <input type="text" id="profile-gender" list="gender-suggestions" data-i18n-placeholder="ph_gender" placeholder="性別">
+      <datalist id="gender-suggestions">
+        <option value="男性">
+        <option value="女性">
+        <option value="選びたくない">
+      </datalist>
+      <input type="text" id="profile-religion" data-i18n-placeholder="ph_religion" placeholder="宗教">
+      <input type="text" id="profile-sexual-orientation" data-i18n-placeholder="ph_sexual_orientation" placeholder="性的志向">
+      <input type="text" id="profile-race" data-i18n-placeholder="ph_race" placeholder="人種">
+      <input type="text" id="profile-hometown" data-i18n-placeholder="ph_hometown" placeholder="出身地">
+      <input type="text" id="profile-residence-country" data-i18n-placeholder="ph_residence_country" placeholder="居住国">
+      <input type="text" id="profile-nationality" data-i18n-placeholder="ph_nationality" placeholder="国籍">
       <button type="submit" data-i18n="save_btn">保存</button>
+    </form>
+
+    <h3 data-i18n="residence_title">居住歴</h3>
+    <ul id="residence-list"></ul>
+    <button type="button" id="residence-add-toggle-btn" data-i18n="residence_add_toggle">+ 居住歴を追加</button>
+    <form id="residence-add-form" class="hidden">
+      <input type="text" id="residence-place" data-i18n-placeholder="ph_residence_place" placeholder="国・都市">
+      <input type="text" id="residence-period" data-i18n-placeholder="ph_residence_period" placeholder="期間（例: 2010〜2015、2012/4〜2015/3）">
+      <textarea id="residence-note" rows="2" data-i18n-placeholder="ph_note" placeholder="自由記述（その他のエピソードなど）"></textarea>
+      <button type="submit" data-i18n="residence_add_submit">この居住歴を追加</button>
     </form>
 
     <h3 data-i18n="career_title">職歴</h3>

@@ -68,6 +68,15 @@ def init_db() -> None:
                 updated_at TEXT NOT NULL
             )"""
         )
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS residence_history (
+                id TEXT PRIMARY KEY,
+                place TEXT,
+                period TEXT,
+                note TEXT,
+                created_at TEXT NOT NULL
+            )"""
+        )
         _ensure_column(conn, "career_history", "note")
         _ensure_column(conn, "education_history", "note")
         _ensure_column(conn, "career_history", "sort_order", "INTEGER")
@@ -90,7 +99,11 @@ def _next_career_sort_order(conn) -> int:
     return (conn.execute("SELECT MAX(sort_order) AS m FROM career_history").fetchone()["m"] or 0) + 1
 
 
-BASIC_INFO_KEYS = ["name", "birth_date", "current_company", "current_position", "current_salary"]
+BASIC_INFO_KEYS = [
+    "name", "birth_date", "current_company", "current_position", "current_salary",
+    "gender", "religion", "sexual_orientation", "race", "hometown",
+    "residence_country", "nationality",
+]
 
 
 def get_basic_info() -> dict:
@@ -241,6 +254,52 @@ def delete_education(entry_id: str) -> None:
         conn.execute("DELETE FROM education_history WHERE id = ?", (entry_id,))
 
 
+def list_residence() -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM residence_history ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def add_residence(entry: dict) -> dict:
+    record = {
+        "id": str(uuid.uuid4()),
+        "place": entry.get("place", ""),
+        "period": entry.get("period", ""),
+        "note": entry.get("note", ""),
+        "created_at": _now(),
+    }
+    with _connect() as conn:
+        conn.execute(
+            """INSERT INTO residence_history (id, place, period, note, created_at)
+            VALUES (?, ?, ?, ?, ?)""",
+            (record["id"], record["place"], record["period"], record["note"], record["created_at"]),
+        )
+    return record
+
+
+RESIDENCE_FIELDS = ["place", "period", "note"]
+
+
+def update_residence(entry_id: str, entry: dict) -> dict | None:
+    fields = {k: v for k, v in entry.items() if k in RESIDENCE_FIELDS}
+    if not fields:
+        return None
+    with _connect() as conn:
+        conn.execute(
+            f"UPDATE residence_history SET {', '.join(f'{k} = ?' for k in fields)} WHERE id = ?",
+            (*fields.values(), entry_id),
+        )
+        row = conn.execute("SELECT * FROM residence_history WHERE id = ?", (entry_id,)).fetchone()
+        return dict(row) if row else None
+
+
+def delete_residence(entry_id: str) -> None:
+    with _connect() as conn:
+        conn.execute("DELETE FROM residence_history WHERE id = ?", (entry_id,))
+
+
 _IMPORT_PROMPT = (
     "次のテキストは職務経歴書またはLinkedInのプロフィールです。"
     "そこから読み取れる基本情報・職歴・学歴を、以下の形式のJSONオブジェクトとして出力してください。\n"
@@ -313,12 +372,13 @@ async def import_profile_text(text: str) -> dict:
 
 
 def format_profile_summary() -> str:
-    """チャットのtool callingから呼び出す用: 基本情報・職歴・学歴を読みやすいテキストにまとめる"""
+    """チャットのtool callingから呼び出す用: 基本情報・職歴・学歴・居住歴を読みやすいテキストにまとめる"""
     basic = get_basic_info()
     career = list_career()
     education = list_education()
+    residence = list_residence()
 
-    if not basic and not career and not education:
+    if not basic and not career and not education and not residence:
         return ""
 
     lines = []
@@ -326,6 +386,10 @@ def format_profile_summary() -> str:
         lines.append("[基本情報]")
         for key, value in basic.items():
             lines.append(f"{key}: {value}")
+    if residence:
+        lines.append("[居住歴]")
+        for r in residence:
+            lines.append(f"- {r['place']} ({r['period']})" + (f" 補足: {r['note']}" if r.get("note") else ""))
     if career:
         lines.append("[職歴]")
         for c in career:
