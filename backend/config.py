@@ -8,7 +8,7 @@ CHROMA_DIR = DATA_DIR / "chroma"
 CHAT_DB_PATH = DATA_DIR / "chat.db"
 
 OLLAMA_HOST = "http://localhost:11434"
-MAIN_MODEL = "qwen3:4b"
+MAIN_MODEL = "gemma4:e2b"
 LIGHT_MODEL = "gemma3:1b"
 EXTRACT_MODEL = "gemma4:e2b"
 

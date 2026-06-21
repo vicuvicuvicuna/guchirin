@@ -7,18 +7,15 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from backend import history, profile, tools as agent_tools
+from backend import history, planner, profile, tools as agent_tools
 from backend.config import BASE_DIR, MAIN_MODEL
-from backend.llm import chat_with_tools, list_models, pull_model, stream_chat
+from backend.llm import list_models, pull_model, stream_chat
 from backend.memory import extractor, store
-from backend.search import extract_search_queries, format_search_results, web_search
 
 app = FastAPI(title="Local LLM Chat")
 
 history.init_db()
 profile.init_db()
-
-MAX_TOOL_ITERATIONS = 3
 
 TOOL_STATUS_LABELS = {
     "web_search": "Web検索中",
@@ -66,49 +63,28 @@ async def chat(req: ChatRequest):
     async def event_stream():
         full_response = ""
         try:
-            if req.search_mode:
-                # 検索モードON時はLLMの判断を介さず、必ずWeb検索を実行する
-                # ただし会話文をそのまま検索するのではなく、検索すべき内容を先に抽出する
-                queries = await extract_search_queries(req.message)
-                yield _status_chunk("「" + "」「".join(queries) + "」を検索中")
-                yield _tool_call_chunk("web_search", queries)
-                results = []
-                for q in queries:
-                    results.extend(web_search(q))
-                formatted = format_search_results(results)
-                if formatted:
-                    messages.append({"role": "tool", "name": "web_search", "content": formatted})
-            else:
-                # それ以外はLLM自身がツールを呼ぶか判断する（function calling）
-                # ただし選択モデルがtools未対応だとOllamaが400を返すため、その場合はtoolsなしの通常応答にフォールバックする
-                tool_list = agent_tools.available_tools()
-                try:
-                    for _ in range(MAX_TOOL_ITERATIONS):
-                        assistant_content = ""
-                        tool_calls = []
-                        async for kind, data in chat_with_tools(messages, tool_list, model=chat_model):
-                            if kind == "thinking":
-                                yield _thinking_chunk(data)
-                            elif kind == "content":
-                                assistant_content += data
-                            elif kind == "tool_calls":
-                                tool_calls = data
-                        if not tool_calls:
-                            break
-                        messages.append(
-                            {"role": "assistant", "content": assistant_content, "tool_calls": tool_calls}
-                        )
-                        for call in tool_calls:
-                            fn = call.get("function", {})
-                            name = fn.get("name", "")
-                            arguments = fn.get("arguments", {}) or {}
-                            yield _status_chunk(TOOL_STATUS_LABELS.get(name, f"{name} 実行中"))
-                            yield _tool_call_chunk(name, arguments.get("query", ""))
-                            result = agent_tools.execute_tool(name, arguments)
-                            messages.append({"role": "tool", "name": name, "content": result})
-                except httpx.HTTPStatusError as e:
-                    if e.response.status_code != 400:
-                        raise
+            # ツール呼び出しは事前に1回だけ計画(プランニング)し、計画通りに順次実行してから回答する。
+            # 個人情報(プロフィール/記憶)に依存する質問は、計画上Web検索より先に取得されるようにする
+            tool_list = agent_tools.available_tools()
+            plan = []
+            async for kind, data in planner.build_plan(req.message, tool_list, req.search_mode, chat_model):
+                if kind == "thinking":
+                    yield _thinking_chunk(data)
+                elif kind == "plan":
+                    plan = data
+
+            # "tool"ロールのメッセージはOllamaのモデルによってはチャットテンプレートが対応しておらず
+            # 黙って無視される(例: gemma4)ため、実行結果は通常のuserメッセージとして埋め込む
+            tool_results = []
+            for step in plan:
+                name = step["name"]
+                arguments = step["arguments"]
+                yield _status_chunk(TOOL_STATUS_LABELS.get(name, f"{name} 実行中"))
+                yield _tool_call_chunk(name, arguments.get("query", ""))
+                result = agent_tools.execute_tool(name, arguments)
+                tool_results.append(f"[{name}の実行結果]\n{result}")
+            if tool_results:
+                messages.append({"role": "user", "content": "\n\n".join(tool_results)})
 
             async for kind, text in stream_chat(messages, model=chat_model):
                 if kind == "thinking":

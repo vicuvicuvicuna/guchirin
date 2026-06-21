@@ -185,3 +185,18 @@ body {
   padding: 6px 12px; background: #3b5bdb; color: white; border: none;
   border-radius: 6px; cursor: pointer; align-self: flex-start;
 }
+
+#progress-panel {
+  width: 320px; min-width: 240px; max-width: 700px; flex-shrink: 0;
+  background: #17181a; padding: 12px; overflow-y: auto; position: relative;
+}
+#progress-panel.hidden { display: none; }
+#progress-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+#progress-list li {
+  background: #2b2d31; padding: 8px; border-radius: 6px; font-size: 13px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+#progress-list .progress-label { font-weight: bold; color: #8ab4f8; }
+#progress-list li.progress-thinking .progress-label { color: #9aa0a6; }
+#progress-list .progress-detail { white-space: pre-wrap; word-break: break-word; color: #ccc; }
+#progress-list li.progress-thinking .progress-detail { font-style: italic; color: #9aa0a6; }
