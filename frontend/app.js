@@ -42,9 +42,23 @@ const profileImportForm = document.getElementById("profile-import-form");
 const profileImportInput = document.getElementById("profile-import-input");
 const profileImportFileForm = document.getElementById("profile-import-file-form");
 const profileImportFileInput = document.getElementById("profile-import-file-input");
+const langSelect = document.getElementById("lang-select");
+
+const t = window.I18N ? window.I18N.t : (key) => key;
 
 let currentSessionId = null;
 let activeController = null;
+
+if (window.I18N && langSelect) {
+  langSelect.value = window.I18N.getLangSetting();
+  window.I18N.applyTranslations();
+  langSelect.addEventListener("change", () => {
+    window.I18N.setLangSetting(langSelect.value);
+    window.I18N.applyTranslations();
+  });
+} else if (window.I18N) {
+  window.I18N.applyTranslations();
+}
 
 async function loadSessions() {
   const res = await fetch("/sessions");
@@ -83,7 +97,7 @@ async function createSession() {
   const res = await fetch("/sessions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title: "新しいチャット" }),
+    body: JSON.stringify({ title: t("default_session_title") }),
   });
   const session = await res.json();
   currentSessionId = session.id;
@@ -171,11 +185,11 @@ chatForm.addEventListener("submit", async (e) => {
     }
   } catch (err) {
     if (err.name !== "AbortError") throw err;
-    if (!full) assistantDiv.textContent = "（停止しました）";
+    if (!full) assistantDiv.textContent = t("stopped_message");
   } finally {
     assistantDiv.classList.remove("thinking");
     activeController = null;
-    sendBtn.textContent = "送信";
+    sendBtn.textContent = t("send_btn");
     sendBtn.classList.remove("stop-mode");
   }
   loadSessions();
@@ -193,10 +207,10 @@ async function loadMemory() {
   const status = await statusRes.json();
   const items = await listRes.json();
 
-  memoryStatusEl.textContent = `${status.count} / ${status.max_entries} 件`;
+  memoryStatusEl.textContent = t("memory_status_count", { count: status.count, max: status.max_entries });
   memoryStatusEl.classList.toggle("warning", status.warning);
-  if (status.full) memoryStatusEl.textContent += "（容量満杯：新規追加不可、更新のみ）";
-  else if (status.warning) memoryStatusEl.textContent += "（容量警告）";
+  if (status.full) memoryStatusEl.textContent += t("memory_status_full");
+  else if (status.warning) memoryStatusEl.textContent += t("memory_status_warning");
 
   memoryListEl.innerHTML = "";
   for (const item of items) {
@@ -227,7 +241,7 @@ memoryAddForm.addEventListener("submit", async (e) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
-  if (!res.ok) alert("記憶の容量が満杯のため追加できません");
+  if (!res.ok) alert(t("memory_full_alert"));
   loadMemory();
 });
 
@@ -267,13 +281,13 @@ async function loadCareer() {
 
     const fields = document.createElement("div");
     fields.className = "entry-fields";
-    const companyInput = makeFieldInput(c.company, "会社名");
-    const positionInput = makeFieldInput(c.position, "職位");
-    const startInput = makeFieldInput(c.start_date, "開始(YYYY-MM)");
-    const endInput = makeFieldInput(c.end_date, "終了(YYYY-MM、在籍中は空欄)");
-    const salaryInput = makeFieldInput(c.salary, "収入");
-    const joiningInput = makeFieldInput(c.reason_for_joining, "入社理由");
-    const leavingInput = makeFieldInput(c.reason_for_leaving, "退職理由");
+    const companyInput = makeFieldInput(c.company, t("ph_company"));
+    const positionInput = makeFieldInput(c.position, t("ph_position"));
+    const startInput = makeFieldInput(c.start_date, t("ph_start_date"));
+    const endInput = makeFieldInput(c.end_date, t("ph_end_date"));
+    const salaryInput = makeFieldInput(c.salary, t("ph_salary"));
+    const joiningInput = makeFieldInput(c.reason_for_joining, t("ph_reason_joining"));
+    const leavingInput = makeFieldInput(c.reason_for_leaving, t("ph_reason_leaving"));
     [companyInput, positionInput, startInput, endInput, salaryInput, joiningInput, leavingInput].forEach((i) =>
       fields.appendChild(i)
     );
@@ -281,7 +295,7 @@ async function loadCareer() {
 
     const noteInput = document.createElement("textarea");
     noteInput.rows = 2;
-    noteInput.placeholder = "自由記述（その他のエピソードなど）";
+    noteInput.placeholder = t("ph_note");
     noteInput.value = c.note || "";
     li.appendChild(noteInput);
 
@@ -316,7 +330,7 @@ async function loadCareer() {
 
     const saveBtn = document.createElement("button");
     saveBtn.type = "button";
-    saveBtn.textContent = "保存";
+    saveBtn.textContent = t("save_btn");
     saveBtn.addEventListener("click", async () => {
       await fetch(`/profile/career/${c.id}`, {
         method: "PUT",
@@ -363,16 +377,16 @@ async function loadEducation() {
 
     const fields = document.createElement("div");
     fields.className = "entry-fields";
-    const degreeInput = makeFieldInput(e.degree, "学位（学士/修士/博士など）");
-    const fieldInput = makeFieldInput(e.field, "専攻");
-    const schoolInput = makeFieldInput(e.school, "学校名");
-    const yearInput = makeFieldInput(e.graduated_year, "卒業年（YYYY）");
+    const degreeInput = makeFieldInput(e.degree, t("ph_degree"));
+    const fieldInput = makeFieldInput(e.field, t("ph_field"));
+    const schoolInput = makeFieldInput(e.school, t("ph_school"));
+    const yearInput = makeFieldInput(e.graduated_year, t("ph_graduated_year"));
     [degreeInput, fieldInput, schoolInput, yearInput].forEach((i) => fields.appendChild(i));
     li.appendChild(fields);
 
     const noteInput = document.createElement("textarea");
     noteInput.rows = 2;
-    noteInput.placeholder = "自由記述（その他のエピソードなど）";
+    noteInput.placeholder = t("ph_note");
     noteInput.value = e.note || "";
     li.appendChild(noteInput);
 
@@ -381,7 +395,7 @@ async function loadEducation() {
 
     const saveBtn = document.createElement("button");
     saveBtn.type = "button";
-    saveBtn.textContent = "保存";
+    saveBtn.textContent = t("save_btn");
     saveBtn.addEventListener("click", async () => {
       await fetch(`/profile/education/${e.id}`, {
         method: "PUT",
@@ -482,7 +496,7 @@ profileImportForm.addEventListener("submit", async (e) => {
   if (!text) return;
   const btn = profileImportForm.querySelector("button[type=submit]");
   btn.disabled = true;
-  btn.textContent = "読み込み中...";
+  btn.textContent = t("import_submit_loading");
   try {
     await fetch("/profile/import", {
       method: "POST",
@@ -493,7 +507,7 @@ profileImportForm.addEventListener("submit", async (e) => {
     await loadProfile();
   } finally {
     btn.disabled = false;
-    btn.textContent = "読み込んで登録";
+    btn.textContent = t("import_submit");
   }
 });
 
@@ -503,21 +517,21 @@ profileImportFileForm.addEventListener("submit", async (e) => {
   if (!file) return;
   const btn = profileImportFileForm.querySelector("button[type=submit]");
   btn.disabled = true;
-  btn.textContent = "読み込み中...";
+  btn.textContent = t("import_submit_loading");
   try {
     const formData = new FormData();
     formData.append("file", file);
     const res = await fetch("/profile/import/file", { method: "POST", body: formData });
     if (!res.ok) {
       const err = await res.json();
-      alert(err.detail || "読み込みに失敗しました");
+      alert(err.detail || t("import_file_failed"));
       return;
     }
     profileImportFileInput.value = "";
     await loadProfile();
   } finally {
     btn.disabled = false;
-    btn.textContent = "ファイルから読み込んで登録";
+    btn.textContent = t("import_file_submit");
   }
 });
 

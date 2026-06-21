@@ -1,0 +1,279 @@
+(function () {
+const STORAGE_KEY = "guchirin-lang";
+const SUPPORTED_LANGS = ["ja", "en", "ko", "zh"];
+const FALLBACK_LANG = "en";
+
+const DICT = {
+  ja: {
+    page_title: "ぐちりん",
+    new_chat_btn: "+ 新しいチャット",
+    default_session_title: "新しいチャット",
+    memory_toggle_btn: "記憶パネル",
+    profile_toggle_btn: "プロフィール",
+    lang_label: "言語",
+    lang_auto: "自動（システム設定）",
+    lang_ja: "日本語",
+    lang_en: "English",
+    lang_ko: "한국어",
+    lang_zh: "中文",
+    search_mode_label: "検索モード",
+    message_input_placeholder: "メッセージを入力...",
+    send_btn: "送信",
+    stopped_message: "（停止しました）",
+    memory_panel_title: "記憶",
+    memory_add_placeholder: "記憶を追加...",
+    memory_add_btn: "追加",
+    memory_status_count: "{count} / {max} 件",
+    memory_status_full: "（容量満杯：新規追加不可、更新のみ）",
+    memory_status_warning: "（容量警告）",
+    memory_full_alert: "記憶の容量が満杯のため追加できません",
+    profile_panel_title: "プロフィール",
+    basic_info_title: "基本情報",
+    ph_name: "氏名",
+    ph_birth_date: "生年月日",
+    ph_current_company: "現在の勤務先",
+    ph_current_position: "現在の職位",
+    ph_current_salary: "現在の年収",
+    save_btn: "保存",
+    career_title: "職歴",
+    career_add_toggle: "+ 職歴を追加",
+    ph_company: "会社名",
+    ph_position: "職位",
+    ph_start_date: "開始(YYYY-MM)",
+    ph_end_date: "終了(YYYY-MM、在籍中は空欄)",
+    ph_salary: "収入",
+    ph_reason_joining: "入社理由",
+    ph_reason_leaving: "退職理由",
+    ph_note: "自由記述（その他のエピソードなど）",
+    career_add_submit: "この職歴を追加",
+    education_title: "学歴",
+    education_add_toggle: "+ 学歴を追加",
+    ph_degree: "学位（学士/修士/博士など）",
+    ph_field: "専攻",
+    ph_school: "学校名",
+    ph_graduated_year: "卒業年（YYYY）",
+    education_add_submit: "この学歴を追加",
+    import_title: "職務経歴書 / LinkedIn から一括登録",
+    import_textarea_placeholder: "職務経歴書やLinkedInプロフィールのテキストを貼り付け...",
+    import_submit: "読み込んで登録",
+    import_submit_loading: "読み込み中...",
+    import_file_submit: "ファイルから読み込んで登録",
+    import_file_failed: "読み込みに失敗しました",
+  },
+  en: {
+    page_title: "Guchirin",
+    new_chat_btn: "+ New Chat",
+    default_session_title: "New Chat",
+    memory_toggle_btn: "Memory Panel",
+    profile_toggle_btn: "Profile",
+    lang_label: "Language",
+    lang_auto: "Auto (system)",
+    lang_ja: "日本語",
+    lang_en: "English",
+    lang_ko: "한국어",
+    lang_zh: "中文",
+    search_mode_label: "Search Mode",
+    message_input_placeholder: "Type a message...",
+    send_btn: "Send",
+    stopped_message: "(Stopped)",
+    memory_panel_title: "Memory",
+    memory_add_placeholder: "Add a memory...",
+    memory_add_btn: "Add",
+    memory_status_count: "{count} / {max} entries",
+    memory_status_full: "(Full: no new entries, updates only)",
+    memory_status_warning: "(Capacity warning)",
+    memory_full_alert: "Cannot add: memory capacity is full",
+    profile_panel_title: "Profile",
+    basic_info_title: "Basic Info",
+    ph_name: "Name",
+    ph_birth_date: "Birth date",
+    ph_current_company: "Current company",
+    ph_current_position: "Current position",
+    ph_current_salary: "Current salary",
+    save_btn: "Save",
+    career_title: "Career History",
+    career_add_toggle: "+ Add career entry",
+    ph_company: "Company",
+    ph_position: "Position",
+    ph_start_date: "Start (YYYY-MM)",
+    ph_end_date: "End (YYYY-MM, blank if current)",
+    ph_salary: "Salary",
+    ph_reason_joining: "Reason for joining",
+    ph_reason_leaving: "Reason for leaving",
+    ph_note: "Notes (other details, etc.)",
+    career_add_submit: "Add this entry",
+    education_title: "Education",
+    education_add_toggle: "+ Add education entry",
+    ph_degree: "Degree (Bachelor's, Master's, etc.)",
+    ph_field: "Field of study",
+    ph_school: "School name",
+    ph_graduated_year: "Graduation year (YYYY)",
+    education_add_submit: "Add this entry",
+    import_title: "Bulk import from resume / LinkedIn",
+    import_textarea_placeholder: "Paste resume or LinkedIn profile text...",
+    import_submit: "Import & Register",
+    import_submit_loading: "Loading...",
+    import_file_submit: "Import from file",
+    import_file_failed: "Import failed",
+  },
+  ko: {
+    page_title: "구치링",
+    new_chat_btn: "+ 새 채팅",
+    default_session_title: "새 채팅",
+    memory_toggle_btn: "기억 패널",
+    profile_toggle_btn: "프로필",
+    lang_label: "언어",
+    lang_auto: "자동(시스템 설정)",
+    lang_ja: "日本語",
+    lang_en: "English",
+    lang_ko: "한국어",
+    lang_zh: "中文",
+    search_mode_label: "검색 모드",
+    message_input_placeholder: "메시지를 입력...",
+    send_btn: "보내기",
+    stopped_message: "(중지됨)",
+    memory_panel_title: "기억",
+    memory_add_placeholder: "기억 추가...",
+    memory_add_btn: "추가",
+    memory_status_count: "{count} / {max} 개",
+    memory_status_full: "(용량 가득 참: 신규 추가 불가, 수정만 가능)",
+    memory_status_warning: "(용량 경고)",
+    memory_full_alert: "기억 용량이 가득 차서 추가할 수 없습니다",
+    profile_panel_title: "프로필",
+    basic_info_title: "기본 정보",
+    ph_name: "이름",
+    ph_birth_date: "생년월일",
+    ph_current_company: "현재 직장",
+    ph_current_position: "현재 직위",
+    ph_current_salary: "현재 연봉",
+    save_btn: "저장",
+    career_title: "경력",
+    career_add_toggle: "+ 경력 추가",
+    ph_company: "회사명",
+    ph_position: "직위",
+    ph_start_date: "시작(YYYY-MM)",
+    ph_end_date: "종료(YYYY-MM, 재직 중이면 공란)",
+    ph_salary: "연봉",
+    ph_reason_joining: "입사 이유",
+    ph_reason_leaving: "퇴사 이유",
+    ph_note: "자유 기술(기타 에피소드 등)",
+    career_add_submit: "이 경력 추가",
+    education_title: "학력",
+    education_add_toggle: "+ 학력 추가",
+    ph_degree: "학위(학사/석사/박사 등)",
+    ph_field: "전공",
+    ph_school: "학교명",
+    ph_graduated_year: "졸업 연도(YYYY)",
+    education_add_submit: "이 학력 추가",
+    import_title: "경력서 / LinkedIn 일괄 등록",
+    import_textarea_placeholder: "경력서나 LinkedIn 프로필 텍스트를 붙여넣기...",
+    import_submit: "불러와서 등록",
+    import_submit_loading: "불러오는 중...",
+    import_file_submit: "파일에서 불러와서 등록",
+    import_file_failed: "불러오기에 실패했습니다",
+  },
+  zh: {
+    page_title: "居期林",
+    new_chat_btn: "+ 新建聊天",
+    default_session_title: "新建聊天",
+    memory_toggle_btn: "记忆面板",
+    profile_toggle_btn: "个人资料",
+    lang_label: "语言",
+    lang_auto: "自动（系统设置）",
+    lang_ja: "日本語",
+    lang_en: "English",
+    lang_ko: "한국어",
+    lang_zh: "中文",
+    search_mode_label: "搜索模式",
+    message_input_placeholder: "输入消息...",
+    send_btn: "发送",
+    stopped_message: "（已停止）",
+    memory_panel_title: "记忆",
+    memory_add_placeholder: "添加记忆...",
+    memory_add_btn: "添加",
+    memory_status_count: "{count} / {max} 条",
+    memory_status_full: "（容量已满：无法新增，仅可更新）",
+    memory_status_warning: "（容量警告）",
+    memory_full_alert: "记忆容量已满，无法添加",
+    profile_panel_title: "个人资料",
+    basic_info_title: "基本信息",
+    ph_name: "姓名",
+    ph_birth_date: "出生日期",
+    ph_current_company: "当前公司",
+    ph_current_position: "当前职位",
+    ph_current_salary: "当前薪资",
+    save_btn: "保存",
+    career_title: "工作经历",
+    career_add_toggle: "+ 添加工作经历",
+    ph_company: "公司名称",
+    ph_position: "职位",
+    ph_start_date: "开始(YYYY-MM)",
+    ph_end_date: "结束(YYYY-MM，在职则留空)",
+    ph_salary: "薪资",
+    ph_reason_joining: "入职原因",
+    ph_reason_leaving: "离职原因",
+    ph_note: "备注（其他细节等）",
+    career_add_submit: "添加此经历",
+    education_title: "教育经历",
+    education_add_toggle: "+ 添加教育经历",
+    ph_degree: "学位（学士/硕士/博士等）",
+    ph_field: "专业",
+    ph_school: "学校名称",
+    ph_graduated_year: "毕业年份（YYYY）",
+    education_add_submit: "添加此经历",
+    import_title: "从简历 / LinkedIn 批量导入",
+    import_textarea_placeholder: "粘贴简历或LinkedIn个人资料文本...",
+    import_submit: "导入并注册",
+    import_submit_loading: "加载中...",
+    import_file_submit: "从文件导入",
+    import_file_failed: "导入失败",
+  },
+};
+
+function detectSystemLang() {
+  const langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+  for (const raw of langs) {
+    const base = (raw || "").slice(0, 2).toLowerCase();
+    if (SUPPORTED_LANGS.includes(base)) return base;
+  }
+  return FALLBACK_LANG;
+}
+
+function getLangSetting() {
+  return localStorage.getItem(STORAGE_KEY) || "auto";
+}
+
+function setLangSetting(value) {
+  localStorage.setItem(STORAGE_KEY, value);
+}
+
+function getEffectiveLang() {
+  const setting = getLangSetting();
+  return setting === "auto" ? detectSystemLang() : setting;
+}
+
+function t(key, vars) {
+  const lang = getEffectiveLang();
+  const entry = DICT[lang] || DICT[FALLBACK_LANG];
+  let text = entry[key] ?? DICT[FALLBACK_LANG][key] ?? key;
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      text = text.replace(`{${k}}`, v);
+    }
+  }
+  return text;
+}
+
+function applyTranslations() {
+  document.documentElement.lang = getEffectiveLang();
+  document.title = t("page_title");
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+}
+
+window.I18N = { t, getLangSetting, setLangSetting, getEffectiveLang, applyTranslations };
+})();

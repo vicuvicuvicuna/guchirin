@@ -42,6 +42,9 @@ def init_db() -> None:
         )
 
 
+DEFAULT_TITLES = {"新しいチャット", "New Chat", "새 채팅", "新建聊天"}
+
+
 def create_session(title: str = "新しいチャット") -> dict:
     session_id = str(uuid.uuid4())
     created_at = _now()
@@ -93,7 +96,7 @@ def maybe_set_title(session_id: str, first_user_message: str) -> None:
         row = conn.execute(
             "SELECT title FROM sessions WHERE id = ?", (session_id,)
         ).fetchone()
-        if row and row["title"] == "新しいチャット":
+        if row and row["title"] in DEFAULT_TITLES:
             conn.execute(
                 "UPDATE sessions SET title = ? WHERE id = ?", (title, session_id)
             )
