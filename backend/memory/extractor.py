@@ -1,12 +1,13 @@
 import json
 import re
 
-from backend.config import MAIN_MODEL, MEMORY_MERGE_SIMILARITY_THRESHOLD
+from backend.config import EXTRACT_MODEL, MEMORY_MERGE_SIMILARITY_THRESHOLD
 from backend.llm import chat_once
 from backend.memory import store
 
-# 軽量モデル(LIGHT_MODEL)は雑談からも事実っぽい文を誤抽出しやすいため、
-# 記憶の質を優先してMAIN_MODELを使う（非同期タスクなので速度は重視しない）
+# 具体例(few-shot)を入れるとその例の内容自体が事実として誤抽出されやすいため、
+# 例は出さずに出力フォーマットをプレースホルダーで示す。
+# 抽出品質を優先してEXTRACT_MODEL(MAIN_MODELより上位のローカルモデル)を使う（非同期タスクなので速度は重視しない）
 _EXTRACT_PROMPT = (
     "次の会話から、ユーザー本人について今後も変わらず使える事実だけを抽出してください。\n"
     "対象: 氏名・年齢・職業・居住地・家族構成・恒常的な好み/嫌い・確定した設定や予定など。\n"
@@ -14,20 +15,9 @@ _EXTRACT_PROMPT = (
     "あいさつ・相づちのみの発言、抽象的すぎる感想。\n"
     "確信が持てない場合や、当てはまる事実が無い場合は出力しないでください。\n"
     "各事実は短い日本語の一文とし、会話文の引用や要約ではなく事実そのものを書いてください。\n"
-    "出力はJSON配列のみ。説明文は一切書かないでください。\n\n"
-    "例:\n"
-    "会話:\n"
-    "ユーザー: 私の名前は田中です。猫が好きです。\n"
-    "アシスタント: 田中さん、こんにちは！\n"
-    "出力: [\"ユーザーの名前は田中\", \"ユーザーは猫が好き\"]\n\n"
-    "会話:\n"
-    "ユーザー: 今日は寒いね。\n"
-    "アシスタント: そうですね、暖かくしてくださいね。\n"
-    "出力: []\n\n"
-    "会話:\n"
-    "ユーザー: ねえ、おすすめの本ある？\n"
-    "アシスタント: ジャンルを教えてください。\n"
-    "出力: []\n\n"
+    "出力は下記の会話に基づくJSON配列のみとし、例や他の会話の内容は含めないでください。"
+    "説明文は一切書かないでください。\n\n"
+    "出力フォーマット: [\"<事実1>\", \"<事実2>\", ...] または、事実が無ければ []\n\n"
     "会話:\n"
     "ユーザー: {user_message}\n"
     "アシスタント: {assistant_message}\n"
@@ -72,7 +62,7 @@ async def extract_and_store(user_message: str, assistant_message: str) -> None:
                     ),
                 }
             ],
-            model=MAIN_MODEL,
+            model=EXTRACT_MODEL,
         )
     except Exception:
         return

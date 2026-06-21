@@ -10,6 +10,7 @@ CHAT_DB_PATH = DATA_DIR / "chat.db"
 OLLAMA_HOST = "http://localhost:11434"
 MAIN_MODEL = "qwen3:4b"
 LIGHT_MODEL = "gemma3:1b"
+EXTRACT_MODEL = "gemma4:e2b"
 
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
