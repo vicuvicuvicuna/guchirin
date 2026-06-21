@@ -7,12 +7,24 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="lang-bar">
+  <label id="lang-select-label">
+    <span data-i18n="lang_label">言語</span>
+    <select id="lang-select">
+      <option value="auto" data-i18n="lang_auto">自動（システム設定）</option>
+      <option value="ja" data-i18n="lang_ja">日本語</option>
+      <option value="en" data-i18n="lang_en">English</option>
+      <option value="ko" data-i18n="lang_ko">한국어</option>
+      <option value="zh" data-i18n="lang_zh">中文</option>
+    </select>
+  </label>
+</div>
 <div id="app">
   <aside id="sidebar">
-    <button id="new-chat-btn">+ 新しいチャット</button>
+    <button id="new-chat-btn" data-i18n="new_chat_btn">+ 新しいチャット</button>
     <ul id="session-list"></ul>
-    <button id="memory-toggle-btn">記憶パネル</button>
-    <button id="profile-toggle-btn">プロフィール</button>
+    <button id="memory-toggle-btn" data-i18n="memory_toggle_btn">記憶パネル</button>
+    <button id="profile-toggle-btn" data-i18n="profile_toggle_btn">プロフィール</button>
   </aside>
 
   <main id="chat-area">
@@ -20,74 +32,83 @@
     <form id="chat-form">
       <label id="search-mode-label">
         <input type="checkbox" id="search-mode-checkbox">
-        検索モード
+        <span data-i18n="search_mode_label">検索モード</span>
       </label>
-      <textarea id="message-input" placeholder="メッセージを入力..." rows="2"></textarea>
-      <button type="submit" id="send-btn">送信</button>
+      <textarea id="message-input" data-i18n-placeholder="message_input_placeholder" placeholder="メッセージを入力..." rows="2"></textarea>
+      <button type="submit" id="send-btn" data-i18n="send_btn">送信</button>
     </form>
   </main>
 
   <aside id="memory-panel" class="hidden">
-    <h2>記憶</h2>
+    <div class="resize-handle" id="memory-resize-handle"></div>
+    <div class="panel-header">
+      <h2 data-i18n="memory_panel_title">記憶</h2>
+      <button type="button" class="panel-close-btn" id="memory-close-btn">×</button>
+    </div>
     <div id="memory-status"></div>
     <ul id="memory-list"></ul>
     <form id="memory-add-form">
-      <input type="text" id="memory-add-input" placeholder="記憶を追加...">
-      <button type="submit">追加</button>
+      <input type="text" id="memory-add-input" data-i18n-placeholder="memory_add_placeholder" placeholder="記憶を追加...">
+      <button type="submit" data-i18n="memory_add_btn">追加</button>
     </form>
   </aside>
 
   <aside id="profile-panel" class="hidden">
-    <h2>プロフィール</h2>
+    <div class="resize-handle" id="profile-resize-handle"></div>
+    <div class="panel-header">
+      <h2 data-i18n="profile_panel_title">プロフィール</h2>
+      <button type="button" class="panel-close-btn" id="profile-close-btn">×</button>
+    </div>
 
-    <h3>基本情報</h3>
+    <h3 data-i18n="basic_info_title">基本情報</h3>
     <form id="profile-basic-form">
-      <input type="text" id="profile-name" placeholder="氏名">
-      <input type="text" id="profile-birth-date" placeholder="生年月日">
-      <input type="text" id="profile-current-company" placeholder="現在の勤務先">
-      <input type="text" id="profile-current-position" placeholder="現在の職位">
-      <input type="text" id="profile-current-salary" placeholder="現在の年収">
-      <button type="submit">保存</button>
+      <input type="text" id="profile-name" data-i18n-placeholder="ph_name" placeholder="氏名">
+      <input type="text" id="profile-birth-date" data-i18n-placeholder="ph_birth_date" placeholder="生年月日">
+      <input type="text" id="profile-current-company" data-i18n-placeholder="ph_current_company" placeholder="現在の勤務先">
+      <input type="text" id="profile-current-position" data-i18n-placeholder="ph_current_position" placeholder="現在の職位">
+      <input type="text" id="profile-current-salary" data-i18n-placeholder="ph_current_salary" placeholder="現在の年収">
+      <button type="submit" data-i18n="save_btn">保存</button>
     </form>
 
-    <h3>職歴</h3>
+    <h3 data-i18n="career_title">職歴</h3>
     <ul id="career-list"></ul>
-    <button type="button" id="career-add-toggle-btn">+ 職歴を追加</button>
+    <button type="button" id="career-add-toggle-btn" data-i18n="career_add_toggle">+ 職歴を追加</button>
     <form id="career-add-form" class="hidden">
-      <input type="text" id="career-company" placeholder="会社名">
-      <input type="text" id="career-position" placeholder="職位">
-      <input type="text" id="career-start-date" placeholder="開始(YYYY-MM)">
-      <input type="text" id="career-end-date" placeholder="終了(YYYY-MM、在籍中は空欄)">
-      <input type="text" id="career-salary" placeholder="収入">
-      <input type="text" id="career-reason-joining" placeholder="入社理由">
-      <input type="text" id="career-reason-leaving" placeholder="退職理由">
-      <textarea id="career-note" rows="3" placeholder="自由記述（その他のエピソードなど）"></textarea>
-      <button type="submit">この職歴を追加</button>
+      <input type="text" id="career-company" data-i18n-placeholder="ph_company" placeholder="会社名">
+      <input type="text" id="career-position" data-i18n-placeholder="ph_position" placeholder="職位">
+      <input type="text" id="career-start-date" data-i18n-placeholder="ph_start_date" placeholder="開始(YYYY-MM)">
+      <input type="text" id="career-end-date" data-i18n-placeholder="ph_end_date" placeholder="終了(YYYY-MM、在籍中は空欄)">
+      <input type="text" id="career-salary" data-i18n-placeholder="ph_salary" placeholder="収入">
+      <input type="text" id="career-reason-joining" data-i18n-placeholder="ph_reason_joining" placeholder="入社理由">
+      <input type="text" id="career-reason-leaving" data-i18n-placeholder="ph_reason_leaving" placeholder="退職理由">
+      <textarea id="career-note" rows="3" data-i18n-placeholder="ph_note" placeholder="自由記述（その他のエピソードなど）"></textarea>
+      <button type="submit" data-i18n="career_add_submit">この職歴を追加</button>
     </form>
 
-    <h3>学歴</h3>
+    <h3 data-i18n="education_title">学歴</h3>
     <ul id="education-list"></ul>
-    <button type="button" id="education-add-toggle-btn">+ 学歴を追加</button>
+    <button type="button" id="education-add-toggle-btn" data-i18n="education_add_toggle">+ 学歴を追加</button>
     <form id="education-add-form" class="hidden">
-      <input type="text" id="education-degree" placeholder="学位（学士/修士/博士など）">
-      <input type="text" id="education-field" placeholder="専攻">
-      <input type="text" id="education-school" placeholder="学校名">
-      <input type="text" id="education-graduated-year" placeholder="卒業年（YYYY）">
-      <textarea id="education-note" rows="3" placeholder="自由記述（その他のエピソードなど）"></textarea>
-      <button type="submit">この学歴を追加</button>
+      <input type="text" id="education-degree" data-i18n-placeholder="ph_degree" placeholder="学位（学士/修士/博士など）">
+      <input type="text" id="education-field" data-i18n-placeholder="ph_field" placeholder="専攻">
+      <input type="text" id="education-school" data-i18n-placeholder="ph_school" placeholder="学校名">
+      <input type="text" id="education-graduated-year" data-i18n-placeholder="ph_graduated_year" placeholder="卒業年（YYYY）">
+      <textarea id="education-note" rows="3" data-i18n-placeholder="ph_note" placeholder="自由記述（その他のエピソードなど）"></textarea>
+      <button type="submit" data-i18n="education_add_submit">この学歴を追加</button>
     </form>
 
-    <h3>職務経歴書 / LinkedIn から一括登録</h3>
+    <h3 data-i18n="import_title">職務経歴書 / LinkedIn から一括登録</h3>
     <form id="profile-import-form">
-      <textarea id="profile-import-input" rows="6" placeholder="職務経歴書やLinkedInプロフィールのテキストを貼り付け..."></textarea>
-      <button type="submit">読み込んで登録</button>
+      <textarea id="profile-import-input" rows="6" data-i18n-placeholder="import_textarea_placeholder" placeholder="職務経歴書やLinkedInプロフィールのテキストを貼り付け..."></textarea>
+      <button type="submit" data-i18n="import_submit">読み込んで登録</button>
     </form>
     <form id="profile-import-file-form">
       <input type="file" id="profile-import-file-input" accept=".pdf,.docx">
-      <button type="submit">ファイルから読み込んで登録</button>
+      <button type="submit" data-i18n="import_file_submit">ファイルから読み込んで登録</button>
     </form>
   </aside>
 </div>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

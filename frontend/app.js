@@ -43,6 +43,10 @@ const profileImportInput = document.getElementById("profile-import-input");
 const profileImportFileForm = document.getElementById("profile-import-file-form");
 const profileImportFileInput = document.getElementById("profile-import-file-input");
 const langSelect = document.getElementById("lang-select");
+const memoryCloseBtn = document.getElementById("memory-close-btn");
+const memoryResizeHandle = document.getElementById("memory-resize-handle");
+const profileCloseBtn = document.getElementById("profile-close-btn");
+const profileResizeHandle = document.getElementById("profile-resize-handle");
 
 const t = window.I18N ? window.I18N.t : (key) => key;
 
@@ -196,6 +200,44 @@ chatForm.addEventListener("submit", async (e) => {
 });
 
 newChatBtn.addEventListener("click", createSession);
+
+function makeResizable(handle, panel, storageKey) {
+  const savedWidth = localStorage.getItem(storageKey);
+  if (savedWidth) panel.style.width = `${savedWidth}px`;
+
+  handle.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = panel.getBoundingClientRect().width;
+    handle.classList.add("dragging");
+    document.body.style.cursor = "ew-resize";
+
+    function onMouseMove(moveEvent) {
+      const newWidth = startWidth - (moveEvent.clientX - startX);
+      panel.style.width = `${newWidth}px`;
+    }
+    function onMouseUp() {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      handle.classList.remove("dragging");
+      document.body.style.cursor = "";
+      localStorage.setItem(storageKey, Math.round(panel.getBoundingClientRect().width));
+    }
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  });
+}
+
+makeResizable(memoryResizeHandle, memoryPanel, "guchirin-memory-panel-width");
+makeResizable(profileResizeHandle, profilePanel, "guchirin-profile-panel-width");
+
+memoryCloseBtn.addEventListener("click", () => {
+  memoryPanel.classList.add("hidden");
+});
+
+profileCloseBtn.addEventListener("click", () => {
+  profilePanel.classList.add("hidden");
+});
 
 memoryToggleBtn.addEventListener("click", () => {
   memoryPanel.classList.toggle("hidden");

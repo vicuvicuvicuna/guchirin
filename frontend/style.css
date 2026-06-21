@@ -1,6 +1,9 @@
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #1e1f22; color: #e6e6e6; }
-#app { display: flex; height: 100vh; }
+body {
+  margin: 0; font-family: system-ui, sans-serif; background: #1e1f22; color: #e6e6e6;
+  display: flex; flex-direction: column; height: 100vh;
+}
+#app { display: flex; flex: 1; min-height: 0; }
 
 #sidebar {
   width: 220px; background: #17181a; padding: 10px; display: flex;
@@ -20,7 +23,8 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #1e1f22; color
 #session-list .delete-btn { background: none; border: none; color: #999; cursor: pointer; }
 
 #lang-bar {
-  position: fixed; top: 10px; right: 16px; z-index: 100;
+  display: flex; justify-content: flex-end; align-items: center;
+  padding: 6px 16px; background: #17181a; flex-shrink: 0;
 }
 #lang-select-label {
   display: flex; align-items: center; gap: 6px; font-size: 12px; color: #aaa;
@@ -72,9 +76,30 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #1e1f22; color
 }
 
 #memory-panel {
-  width: 280px; background: #17181a; padding: 12px; overflow-y: auto;
+  width: 280px; min-width: 220px; max-width: 600px; flex-shrink: 0;
+  background: #17181a; padding: 12px; overflow-y: auto; position: relative;
 }
 #memory-panel.hidden { display: none; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.panel-header h2 { margin: 0; }
+.panel-close-btn {
+  background: none; border: none; color: #999; cursor: pointer; font-size: 18px;
+  line-height: 1; padding: 0 4px;
+}
+.panel-close-btn:hover { color: #e6e6e6; }
+.resize-handle {
+  position: absolute; top: 0; left: 0; width: 10px; height: 100%;
+  cursor: ew-resize; z-index: 10;
+  display: flex; justify-content: center;
+}
+.resize-handle::before {
+  content: ""; width: 3px; height: 100%;
+  background: rgba(255, 255, 255, 0.4);
+}
+.resize-handle:hover::before,
+.resize-handle.dragging::before {
+  background: rgba(255, 255, 255, 0.9);
+}
 #memory-status { font-size: 12px; color: #aaa; margin-bottom: 8px; }
 #memory-status.warning { color: #f0a020; }
 #memory-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -89,7 +114,8 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #1e1f22; color
 }
 
 #profile-panel {
-  width: 320px; background: #17181a; padding: 12px; overflow-y: auto;
+  width: 320px; min-width: 260px; max-width: 700px; flex-shrink: 0;
+  background: #17181a; padding: 12px; overflow-y: auto; position: relative;
 }
 #profile-panel.hidden { display: none; }
 #profile-panel h3 { font-size: 13px; color: #aaa; margin: 14px 0 6px; }
