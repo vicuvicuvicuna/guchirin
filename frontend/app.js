@@ -43,6 +43,8 @@ const profileImportInput = document.getElementById("profile-import-input");
 const profileImportFileForm = document.getElementById("profile-import-file-form");
 const profileImportFileInput = document.getElementById("profile-import-file-input");
 const langSelect = document.getElementById("lang-select");
+const modelSelect = document.getElementById("model-select");
+const modelStatus = document.getElementById("model-status");
 const memoryCloseBtn = document.getElementById("memory-close-btn");
 const memoryResizeHandle = document.getElementById("memory-resize-handle");
 const profileCloseBtn = document.getElementById("profile-close-btn");
@@ -63,6 +65,104 @@ if (window.I18N && langSelect) {
 } else if (window.I18N) {
   window.I18N.applyTranslations();
 }
+
+const MODEL_STORAGE_KEY = "guchirin-model";
+
+// tool calling対応が確認済みのモデル候補。未ダウンロードでも選択肢として出し、選んだら自動取得する
+const MODEL_SUGGESTIONS = [
+  "llama3.1:8b", "llama3.2:3b", "llama3.2:1b", "llama3.3:70b",
+  "qwen2.5:7b", "qwen2.5-coder:7b", "qwen3:4b", "qwen3:8b", "qwen3:14b",
+  "gemma4:e2b", "gemma4:e4b", "gemma4:12b", "gemma4:26b",
+  "mistral:7b", "mistral-nemo:12b", "mistral-small:24b",
+  "command-r:35b", "hermes3:8b", "devstral:24b",
+];
+
+let installedModels = [];
+let defaultModel = "";
+
+function renderModelOptions(selectedValue) {
+  modelSelect.innerHTML = "";
+  const names = [...new Set([...installedModels, ...MODEL_SUGGESTIONS])];
+  for (const name of names) {
+    const opt = document.createElement("option");
+    opt.value = name;
+    const installed = installedModels.includes(name);
+    opt.textContent = installed ? name : `${name}${t("model_not_downloaded_suffix")}`;
+    opt.dataset.installed = installed ? "1" : "0";
+    modelSelect.appendChild(opt);
+  }
+  modelSelect.value = names.includes(selectedValue) ? selectedValue : defaultModel;
+}
+
+async function loadModels(selectedValue) {
+  const res = await fetch("/models");
+  const data = await res.json();
+  installedModels = data.models;
+  defaultModel = data.default;
+  renderModelOptions(selectedValue ?? localStorage.getItem(MODEL_STORAGE_KEY) ?? defaultModel);
+  modelSelect.disabled = false;
+}
+
+async function downloadModel(model) {
+  modelSelect.disabled = true;
+  modelStatus.classList.remove("error");
+  try {
+    const res = await fetch("/models/pull", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model }),
+    });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let failed = false;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line) continue;
+        const data = JSON.parse(line);
+        if (data.type === "error") {
+          failed = true;
+          modelStatus.classList.add("error");
+          modelStatus.textContent = t("model_download_error", { error: data.text });
+        } else {
+          let status = data.status || "";
+          if (data.total && data.completed) {
+            status += ` ${Math.floor((data.completed / data.total) * 100)}%`;
+          }
+          modelStatus.textContent = t("model_download_progress", { model, status });
+        }
+      }
+    }
+    if (failed) {
+      renderModelOptions(localStorage.getItem(MODEL_STORAGE_KEY) ?? defaultModel);
+      return;
+    }
+    modelStatus.textContent = t("model_download_done", { model });
+    await loadModels(model);
+    localStorage.setItem(MODEL_STORAGE_KEY, model);
+  } finally {
+    modelSelect.disabled = false;
+  }
+}
+
+modelSelect.addEventListener("change", () => {
+  const model = modelSelect.value;
+  const opt = modelSelect.selectedOptions[0];
+  if (opt && opt.dataset.installed === "1") {
+    localStorage.setItem(MODEL_STORAGE_KEY, model);
+    modelStatus.textContent = "";
+    modelStatus.classList.remove("error");
+  } else {
+    downloadModel(model);
+  }
+});
+
+loadModels();
 
 async function loadSessions() {
   const res = await fetch("/sessions");
@@ -140,6 +240,7 @@ chatForm.addEventListener("submit", async (e) => {
     activeController.abort();
     return;
   }
+  if (modelSelect.disabled) return;
   const text = messageInput.value.trim();
   if (!text || !currentSessionId) return;
   messageInput.value = "";
@@ -160,6 +261,7 @@ chatForm.addEventListener("submit", async (e) => {
         session_id: currentSessionId,
         message: text,
         search_mode: searchModeCheckbox.checked,
+        model: modelSelect.value,
       }),
       signal: activeController.signal,
     });
