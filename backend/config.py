@@ -12,7 +12,8 @@ MAIN_MODEL = "gemma4:e2b"
 LIGHT_MODEL = "gemma3:1b"
 EXTRACT_MODEL = "gemma4:e2b"
 
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+# PyTorch不要のONNX Runtime経由(fastembed)で読み込む。GPUなし/モバイル想定でロード・推論コストを抑える
+EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 MAX_MEMORY_ENTRIES = 1000
 MEMORY_WARNING_RATIO = 0.9

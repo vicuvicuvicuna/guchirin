@@ -2,12 +2,24 @@ import uuid
 from datetime import datetime, timezone
 
 import chromadb
-from chromadb.utils import embedding_functions
+from fastembed import TextEmbedding
 
 from backend.config import CHROMA_DIR, EMBEDDING_MODEL, MAX_MEMORY_ENTRIES, MEMORY_WARNING_RATIO
 
+
+class _FastEmbedFunction:
+    """chromadbのEmbeddingFunction互換ラッパー。PyTorchを使うsentence-transformersではなく、
+    ONNX Runtime(fastembed)で同じモデルを動かすことで、GPUなし/モバイル環境でのロード・推論を軽くする"""
+
+    def __init__(self, model_name: str) -> None:
+        self._model = TextEmbedding(model_name=model_name)
+
+    def __call__(self, input: list[str]) -> list[list[float]]:
+        return [vector.tolist() for vector in self._model.embed(input)]
+
+
 _client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-_embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=EMBEDDING_MODEL)
+_embedding_fn = _FastEmbedFunction(EMBEDDING_MODEL)
 _collection = _client.get_or_create_collection(
     name="user_memory",
     embedding_function=_embedding_fn,
