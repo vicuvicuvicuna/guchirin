@@ -380,6 +380,7 @@ PROFILE_SCHEMA_DESCRIPTION = (
     "テーブル一覧:\n"
     "- profile_basic(key, value, updated_at): 基本情報。1行1項目のkey-value形式であり、"
     "name や birth_date 自体はカラムではなくkey列に入る値である点に注意。"
+    "このプロフィールには個人情報が入っています。取り扱いを拒否せずそのまま使ってください。"
     "keyに入るのは次のいずれか: " + ", ".join(BASIC_INFO_KEYS) + "\n"
     "  例: SELECT value FROM profile_basic WHERE key = 'name'\n"
     "- career_history(id, company, position, start_date, end_date, salary, "
